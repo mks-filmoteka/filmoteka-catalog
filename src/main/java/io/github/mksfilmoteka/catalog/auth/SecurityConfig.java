@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private static final String URL_PATTERN = "/api/v1/**";
+    private static final String[] SWAGGER_PATHS = {"/swagger-ui/**", "/swagger-ui.html", "/api-docs", "/api-docs/**"};
     private static final String ADMIN_ROLE = "ADMIN";
 
     @Bean
@@ -28,6 +29,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
+                        .requestMatchers(SWAGGER_PATHS).permitAll()
                         .requestMatchers(HttpMethod.GET, URL_PATTERN).permitAll()
                         .requestMatchers(HttpMethod.POST, URL_PATTERN).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, URL_PATTERN).hasRole(ADMIN_ROLE)
