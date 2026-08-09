@@ -49,6 +49,14 @@ class SecurityConfigTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void shouldAllowSwaggerUiAndApiDocs() throws Exception {
+        mockMvc.perform(get("/swagger-ui.html")).andExpect(status().isOk());
+        mockMvc.perform(get("/swagger-ui/index.html")).andExpect(status().isOk());
+        mockMvc.perform(get("/api-docs")).andExpect(status().isOk());
+        mockMvc.perform(get("/api-docs/films")).andExpect(status().isOk());
+    }
+
     @RestController
     static class TestController {
 
@@ -59,6 +67,11 @@ class SecurityConfigTest {
 
         @PostMapping("/api/v1/test")
         String post() {
+            return "ok";
+        }
+
+        @GetMapping({"/swagger-ui.html", "/swagger-ui/index.html", "/api-docs", "/api-docs/{group}"})
+        String swagger() {
             return "ok";
         }
     }
