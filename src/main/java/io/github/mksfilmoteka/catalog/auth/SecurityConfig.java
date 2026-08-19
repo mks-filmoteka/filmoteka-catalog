@@ -34,6 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(EndpointRequest.to(HealthEndpoint.class)).permitAll()
                         .requestMatchers(SWAGGER_PATHS).permitAll()
                         .requestMatchers(HttpMethod.GET, URL_PATTERN).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/films/collection").permitAll()
                         .requestMatchers(HttpMethod.POST, URL_PATTERN).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.PUT, URL_PATTERN).hasRole(ADMIN_ROLE)
                         .requestMatchers(HttpMethod.DELETE, URL_PATTERN).hasRole(ADMIN_ROLE)

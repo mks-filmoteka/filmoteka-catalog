@@ -1,6 +1,7 @@
 package io.github.mksfilmoteka.catalog.film;
 
 import io.github.mksfilmoteka.catalog.common.PageResponse;
+import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ErrorResponse;
 import io.github.mksfilmoteka.catalog.film.dto.DetailedFilmResponse;
 import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
@@ -49,15 +50,35 @@ public class FilmController {
     public ResponseEntity<PageResponse<FilmResponse>> getFilms(
             @ParameterObject @Valid FilmFilter filter,
             @ParameterObject Pageable pageable) {
-        int pageNumber = Math.max(pageable.getPageNumber(), 0);
-        int pageSize = 100;
-        Sort sort = pageable.getSort().isSorted()
-                ? pageable.getSort().and(Sort.by("id").ascending())
-                : Sort.by("id").ascending();
+        PageResponse<FilmResponse> response = filmService.getFilms(filter, fixedPageable(pageable));
 
-        Pageable fixedPageable = PageRequest.of(pageNumber, pageSize, sort);
+        return ResponseEntity.ok(response);
+    }
 
-        PageResponse<FilmResponse> response = filmService.getFilms(filter, fixedPageable);
+    @Operation(
+            summary = "Get film collection",
+            description = "Returns page of films limited to the given film ids, filtered and sorted"
+    )
+    @ApiResponse(responseCode = "200", description = "Page returned",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = PageResponse.class)
+            )
+    )
+    @ApiResponse(responseCode = "400", description = "Bad request",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @PostMapping("/collection")
+    public ResponseEntity<PageResponse<FilmResponse>> getFilmCollection(
+            @RequestBody @Valid FilmFilter filter,
+            @ParameterObject Pageable pageable) {
+        if (filter.ids() == null) {
+            throw new BadRequestException("Film ids are required for collection search");
+        }
+        PageResponse<FilmResponse> response = filmService.getFilmCollection(filter, fixedPageable(pageable));
 
         return ResponseEntity.ok(response);
     }
@@ -166,5 +187,15 @@ public class FilmController {
     public ResponseEntity<Void> deleteFilm(@PathVariable Long id) {
         filmService.deleteFilm(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private static Pageable fixedPageable(Pageable pageable) {
+        int pageNumber = Math.max(pageable.getPageNumber(), 0);
+        int pageSize = 100;
+        Sort sort = pageable.getSort().isSorted()
+                ? pageable.getSort().and(Sort.by("id").ascending())
+                : Sort.by("id").ascending();
+
+        return PageRequest.of(pageNumber, pageSize, sort);
     }
 }

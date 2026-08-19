@@ -29,6 +29,9 @@ public record FilmFilter(
         Set<Genre> genres,
 
         @Schema(description = "Country filter", example = "[\"UNITED_STATES\"]")
-        Set<Country> countries
+        Set<Country> countries,
+
+        @Schema(description = "Film id filter for collection requests", example = "[1, 2, 3]")
+        Set<Long> ids
 ) {
 }

@@ -11,11 +11,28 @@ import java.util.Set;
 public final class FilmSpecification {
 
     public static Specification<Film> withFilters(FilmFilter filter) {
-        return Specification.where(hasTitle(filter.title()))
+        return Specification.where(hasIds(filter.ids()))
+                .and(hasTitle(filter.title()))
                 .and(hasCountries(filter.countries()))
                 .and(hasReleaseYearFrom(filter.yearFrom()))
                 .and(hasReleaseYearTo(filter.yearTo()))
                 .and(hasGenres(filter.genres()));
+    }
+
+    public static Specification<Film> withCollectionFilters(FilmFilter filter) {
+        return withFilters(filter);
+    }
+
+    public static Specification<Film> hasIds(Set<Long> ids) {
+
+        return (root, _, cb) -> {
+            if (ids == null) {
+                return cb.conjunction();
+            }
+            return ids.isEmpty()
+                    ? cb.disjunction()
+                    : root.get("id").in(ids);
+        };
     }
 
     public static Specification<Film> hasTitle(String title) {
