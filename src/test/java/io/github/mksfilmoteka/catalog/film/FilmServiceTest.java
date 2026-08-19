@@ -169,6 +169,23 @@ class FilmServiceTest {
     }
 
     @Test
+    void shouldReturnFilmCollectionFiltered() {
+        List<Film> films = List.of(loadedFilm());
+        Page<Film> page = new PageImpl<>(films);
+        Pageable pageable = PageRequest.of(0, 100);
+        when(filmRepository.findAll(ArgumentMatchers.<Specification<Film>>any(), eq(pageable))).thenReturn(page);
+        when(filmMapper.filmsToFilmResponses(page.getContent())).thenReturn(List.of(filmResponse()));
+
+        PageResponse<FilmResponse> response = filmService.getFilmCollection(filmCollectionFilter(), pageable);
+
+        assertThat(response.content()).containsExactly(filmResponse());
+        assertThat(response.totalElements()).isEqualTo(1);
+
+        verify(filmRepository).findAll(ArgumentMatchers.<Specification<Film>>any(), eq(pageable));
+        verify(filmMapper).filmsToFilmResponses(films);
+    }
+
+    @Test
     void shouldReturnEmptyListIfNotExist() {
         List<Film> films = List.of();
         Page<Film> page = new PageImpl<>(films);
@@ -189,6 +206,15 @@ class FilmServiceTest {
         Pageable pageable = PageRequest.of(0, 100, Sort.by("test"));
         FilmFilter filter = emptyFilmFilter();
         assertThrows(BadRequestException.class, () -> filmService.getFilms(filter, pageable));
+
+        verifyNoInteractions(filmRepository);
+    }
+
+    @Test
+    void shouldThrowForUnsupportedSortFieldInFilmCollection() {
+        Pageable pageable = PageRequest.of(0, 100, Sort.by("test"));
+        FilmFilter filter = filmCollectionFilter();
+        assertThrows(BadRequestException.class, () -> filmService.getFilmCollection(filter, pageable));
 
         verifyNoInteractions(filmRepository);
     }

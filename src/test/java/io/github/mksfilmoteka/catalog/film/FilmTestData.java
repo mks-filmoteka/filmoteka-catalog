@@ -147,11 +147,27 @@ public final class FilmTestData {
                 RELEASE_YEAR,
                 RELEASE_YEAR + 10,
                 testSetOf(Genre.ADVENTURE, Genre.ACTION),
-                testSetOf(Country.UNITED_STATES, Country.ITALY));
+                testSetOf(Country.UNITED_STATES, Country.ITALY),
+                null);
     }
 
     public static FilmFilter emptyFilmFilter() {
-        return new FilmFilter(null, null, null, null, null);
+        return new FilmFilter(null, null, null, null, null, null);
+    }
+
+    public static FilmFilter filmCollectionFilter() {
+        return new FilmFilter(
+                FILM_TITLE,
+                RELEASE_YEAR,
+                RELEASE_YEAR + 10,
+                testSetOf(Genre.ADVENTURE, Genre.ACTION),
+                testSetOf(Country.UNITED_STATES, Country.ITALY),
+                testSetOf(FILM_ID)
+        );
+    }
+
+    public static FilmFilter emptyFilmCollectionFilter() {
+        return new FilmFilter(null, null, null, null, null, testSetOf());
     }
 
     public static String filmRequestJson(String countries, String genres) {
