@@ -1,6 +1,7 @@
 package io.github.mksfilmoteka.catalog.film;
 
 import io.github.mksfilmoteka.catalog.config.RepositoryTestConfig;
+import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.testListOf;
+import static io.github.mksfilmoteka.catalog.util.TestUtil.testSetOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,6 +60,49 @@ class FilmRepositoryTest {
         assertThat(page.getContent()).extracting(Film::getReleaseYear).containsExactlyInAnyOrder(RELEASE_YEAR);
         assertThat(page.getContent().getFirst().getCountries()).containsExactlyInAnyOrder(Country.UNITED_STATES, Country.ITALY);
         assertThat(page.getContent().getFirst().getGenres()).containsExactlyInAnyOrder(Genre.ADVENTURE, Genre.ACTION);
+    }
+
+    @Test
+    void shouldFindPagedFilmCollectionByIdsAndFilter() {
+        Film matchingFilm = filmRepository.saveAndFlush(film());
+
+        Film sameFilterOutsideCollection = film();
+        sameFilterOutsideCollection.setTitle("film title outside collection");
+        sameFilterOutsideCollection.setReleaseYear(2001);
+        filmRepository.saveAndFlush(sameFilterOutsideCollection);
+
+        Film inCollectionWrongFilter = film();
+        inCollectionWrongFilter.setTitle("other title");
+        inCollectionWrongFilter.setReleaseYear(2002);
+        filmRepository.saveAndFlush(inCollectionWrongFilter);
+
+        FilmFilter filter = new FilmFilter(
+                FILM_TITLE,
+                RELEASE_YEAR,
+                RELEASE_YEAR + 10,
+                testSetOf(Genre.ADVENTURE, Genre.ACTION),
+                testSetOf(Country.UNITED_STATES, Country.ITALY),
+                testSetOf(matchingFilm.getId(), inCollectionWrongFilter.getId())
+        );
+
+        Page<Film> page = filmRepository.findAll(
+                FilmSpecification.withCollectionFilters(filter),
+                PageRequest.of(0, 100));
+
+        assertThat(page.getContent())
+                .extracting(Film::getId)
+                .containsExactly(matchingFilm.getId());
+    }
+
+    @Test
+    void shouldReturnEmptyPageForEmptyFilmCollectionIds() {
+        filmRepository.saveAndFlush(film());
+
+        Page<Film> page = filmRepository.findAll(
+                FilmSpecification.withCollectionFilters(emptyFilmCollectionFilter()),
+                PageRequest.of(0, 100));
+
+        assertThat(page.getContent()).isEmpty();
     }
 
     @Test

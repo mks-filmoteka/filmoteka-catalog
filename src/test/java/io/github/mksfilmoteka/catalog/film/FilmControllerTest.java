@@ -222,6 +222,62 @@ class FilmControllerTest {
     }
 
     @Test
+    void shouldReturnPagedFilmCollectionFiltered() throws Exception {
+        PageResponse<FilmResponse> response =
+                new PageResponse<>(List.of(filmResponse()), 0, 100, 1, 1);
+        when(filmService.getFilmCollection(eq(filmCollectionFilter()), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/films/collection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_MAPPER.writeValueAsString(filmCollectionFilter())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].title").value(FILM_TITLE));
+
+        verify(filmService).getFilmCollection(eq(filmCollectionFilter()), any());
+    }
+
+    @Test
+    void shouldThrowOnFilmCollectionIfIdsAreMissing() throws Exception {
+        mockMvc.perform(post("/api/v1/films/collection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ErrorCode.BAD_REQUEST.name()))
+                .andExpect(jsonPath("$.message").value("Film ids are required for collection search"));
+
+        verify(filmService, never()).getFilmCollection(any(), any());
+    }
+
+    @Test
+    void shouldUseFixedPageSizeAndAppendIdSortForFilmCollection() throws Exception {
+        PageResponse<FilmResponse> response =
+                new PageResponse<>(List.of(), 2, 100, 0, 0);
+        when(filmService.getFilmCollection(any(), any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/films/collection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_MAPPER.writeValueAsString(emptyFilmCollectionFilter()))
+                        .param("page", "2")
+                        .param("size", "5")
+                        .param("sort", "title,desc"))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(filmService).getFilmCollection(any(), pageableCaptor.capture());
+
+        Pageable pageable = pageableCaptor.getValue();
+        Sort.Order titleOrder = pageable.getSort().getOrderFor("title");
+        Sort.Order idOrder = pageable.getSort().getOrderFor("id");
+
+        assertThat(pageable.getPageNumber()).isEqualTo(2);
+        assertThat(pageable.getPageSize()).isEqualTo(100);
+        assertThat(titleOrder).isNotNull();
+        assertThat(titleOrder.getDirection()).isEqualTo(Sort.Direction.DESC);
+        assertThat(idOrder).isNotNull();
+        assertThat(idOrder.getDirection()).isEqualTo(Sort.Direction.ASC);
+    }
+
+    @Test
     void shouldUseFixedPageSizeAndAppendIdSort() throws Exception {
         PageResponse<FilmResponse> response =
                 new PageResponse<>(List.of(), 2, 100, 0, 0);
