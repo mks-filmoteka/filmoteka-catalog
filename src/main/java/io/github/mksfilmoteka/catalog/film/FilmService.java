@@ -35,18 +35,24 @@ public class FilmService {
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("title", "releaseYear", "id");
 
     public PageResponse<FilmResponse> getFilms(FilmFilter filter, Pageable pageable) {
-        return searchFilms(filter, FilmSpecification.withFilters(filter), pageable);
+        return searchFilms("all films", filter,
+                FilmSpecification.withFilters(filter), pageable);
     }
 
     public PageResponse<FilmResponse> getFilmCollection(FilmFilter filter, Pageable pageable) {
         if (filter.ids() == null) {
             throw new BadRequestException("Film ids are required for collection search");
         }
-        return searchFilms(filter, FilmSpecification.withCollectionFilters(filter), pageable);
+        return searchFilms("collection films", filter,
+                FilmSpecification.withCollectionFilters(filter), pageable);
     }
 
-    private PageResponse<FilmResponse> searchFilms(Object filter, Specification<Film> specification, Pageable pageable) {
-        log.debug("Searching films. filter={}, pageable={}", filter, pageable);
+    private PageResponse<FilmResponse> searchFilms(
+            String searchType, FilmFilter filter, Specification<Film> specification, Pageable pageable
+    ) {
+        log.debug("Searching {}. filter=[title={}, year={}-{}, genres={}, countries={}], page={}, sort={}",
+                searchType, filter.title(), filter.yearFrom(), filter.yearTo(), filter.genres(), filter.countries(),
+                pageable.getPageNumber(), pageable.getSort());
         pageable.getSort().forEach(order -> {
             if (!ALLOWED_SORT_FIELDS.contains(order.getProperty())) {
                 throw new BadRequestException("Unsupported sort field: " + order.getProperty());

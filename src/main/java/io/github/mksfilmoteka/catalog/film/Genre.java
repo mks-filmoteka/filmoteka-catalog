@@ -1,7 +1,9 @@
 package io.github.mksfilmoteka.catalog.film;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 @Schema(description = "Film genre")
 public enum Genre {
@@ -39,5 +41,18 @@ public enum Genre {
     @JsonValue
     public String getJsonValue() {
         return jsonValue;
+    }
+
+    @JsonCreator
+    public static Genre fromJson(String value) {
+        if (value == null) {
+            return null;
+        }
+        for (Genre genre : values()) {
+            if (genre.name().equals(value) || genre.jsonValue.equals(value)) {
+                return genre;
+            }
+        }
+        throw InvalidFormatException.from(null, "Invalid genre value", value, Genre.class);
     }
 }
