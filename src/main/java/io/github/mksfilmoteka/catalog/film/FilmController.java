@@ -3,10 +3,7 @@ package io.github.mksfilmoteka.catalog.film;
 import io.github.mksfilmoteka.catalog.common.PageResponse;
 import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ErrorResponse;
-import io.github.mksfilmoteka.catalog.film.dto.DetailedFilmResponse;
-import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
-import io.github.mksfilmoteka.catalog.film.dto.FilmRequest;
-import io.github.mksfilmoteka.catalog.film.dto.FilmResponse;
+import io.github.mksfilmoteka.catalog.film.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -102,6 +99,33 @@ public class FilmController {
     @GetMapping("/{id}")
     public ResponseEntity<DetailedFilmResponse> getFilm(@PathVariable Long id) {
         DetailedFilmResponse response = filmService.findById(id);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Check film existence",
+            description = "Returns the requested film ids that do not exist in catalog"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Film existence checked",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = FilmExistenceResponse.class)
+            )
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Validation error",
+            content = @Content(
+                    mediaType = "application/json",
+                    schema = @Schema(implementation = ErrorResponse.class)
+            )
+    )
+    @PostMapping("/existence")
+    public ResponseEntity<FilmExistenceResponse> checkFilmExistence(@RequestBody @Valid FilmExistenceRequest request) {
+        FilmExistenceResponse response = filmService.checkFilmExistence(request);
 
         return ResponseEntity.ok(response);
     }

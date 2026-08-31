@@ -6,10 +6,7 @@ import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
 import io.github.mksfilmoteka.catalog.director.DirectorService;
-import io.github.mksfilmoteka.catalog.film.dto.DetailedFilmResponse;
-import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
-import io.github.mksfilmoteka.catalog.film.dto.FilmRequest;
-import io.github.mksfilmoteka.catalog.film.dto.FilmResponse;
+import io.github.mksfilmoteka.catalog.film.dto.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static io.github.mksfilmoteka.catalog.actor.ActorTestData.actorRequest;
 import static io.github.mksfilmoteka.catalog.actor.ActorTestData.loadedActor;
@@ -121,6 +119,28 @@ class FilmServiceTest {
         assertThat(response).isEqualTo(detailedFilmResponseFull());
         verify(filmRepository).findById(FILM_ID);
         verify(filmMapper).filmToDetailedFilmResponse(loadedFilm);
+    }
+
+    @Test
+    void shouldReturnMissingFilmIds() {
+        Set<Long> requestedFilmIds = Set.of(1L, 2L, 3L);
+
+        when(filmRepository.findExistingFilmIds(requestedFilmIds)).thenReturn(Set.of(1L, 3L));
+        FilmExistenceResponse response = filmService.checkFilmExistence(new FilmExistenceRequest(requestedFilmIds));
+
+        assertThat(response.missingFilmIds()).containsExactlyInAnyOrder(2L);
+        verify(filmRepository).findExistingFilmIds(requestedFilmIds);
+    }
+
+    @Test
+    void shouldReturnEmptyMissingFilmIdsWhenAllFilmsExist() {
+        Set<Long> requestedFilmIds = Set.of(1L, 2L, 3L);
+
+        when(filmRepository.findExistingFilmIds(requestedFilmIds)).thenReturn(requestedFilmIds);
+        FilmExistenceResponse response = filmService.checkFilmExistence(new FilmExistenceRequest(requestedFilmIds));
+
+        assertThat(response.missingFilmIds()).isEmpty();
+        verify(filmRepository).findExistingFilmIds(requestedFilmIds);
     }
 
     @Test
