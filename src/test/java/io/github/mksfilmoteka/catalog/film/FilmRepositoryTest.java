@@ -13,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.testListOf;
@@ -60,6 +61,22 @@ class FilmRepositoryTest {
         assertThat(page.getContent()).extracting(Film::getReleaseYear).containsExactlyInAnyOrder(RELEASE_YEAR);
         assertThat(page.getContent().getFirst().getCountries()).containsExactlyInAnyOrder(Country.UNITED_STATES, Country.ITALY);
         assertThat(page.getContent().getFirst().getGenres()).containsExactlyInAnyOrder(Genre.ADVENTURE, Genre.ACTION);
+    }
+
+    @Test
+    void shouldFindExistingFilmIds() {
+        Film firstFilm = filmRepository.saveAndFlush(film());
+
+        Film second = film();
+        second.setTitle("different title");
+        Film secondFilm = filmRepository.saveAndFlush(second);
+
+        Long missingFilmId = secondFilm.getId() + 1000;
+        Set<Long> existingFilmIds = filmRepository.findExistingFilmIds(
+                Set.of(firstFilm.getId(), secondFilm.getId(), missingFilmId)
+        );
+
+        assertThat(existingFilmIds).containsExactlyInAnyOrder(firstFilm.getId(), secondFilm.getId());
     }
 
     @Test

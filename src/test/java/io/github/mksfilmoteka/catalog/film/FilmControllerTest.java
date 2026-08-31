@@ -7,9 +7,7 @@ import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ErrorCode;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
-import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
-import io.github.mksfilmoteka.catalog.film.dto.FilmRequest;
-import io.github.mksfilmoteka.catalog.film.dto.FilmResponse;
+import io.github.mksfilmoteka.catalog.film.dto.*;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +20,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Set;
 
 import static io.github.mksfilmoteka.catalog.actor.ActorTestData.ACTOR_NAME;
 import static io.github.mksfilmoteka.catalog.director.DirectorTestData.DIRECTOR_NAME;
@@ -151,6 +150,22 @@ class FilmControllerTest {
                 .andExpect(jsonPath("$.releaseYear").value(RELEASE_YEAR));
 
         verify(filmService).findById(FILM_ID);
+    }
+
+    @Test
+    void shouldCheckFilmsExistence() throws Exception {
+        FilmExistenceRequest request = new FilmExistenceRequest(Set.of(1L, 2L, 3L));
+        FilmExistenceResponse response = new FilmExistenceResponse(Set.of(2L));
+
+        when(filmService.checkFilmExistence(request)).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/films/existence")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_MAPPER.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.missingFilmIds", containsInAnyOrder(2)));
+
+        verify(filmService).checkFilmExistence(request);
     }
 
     @Test
