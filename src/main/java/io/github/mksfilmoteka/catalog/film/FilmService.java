@@ -6,10 +6,7 @@ import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
 import io.github.mksfilmoteka.catalog.director.DirectorService;
-import io.github.mksfilmoteka.catalog.film.dto.DetailedFilmResponse;
-import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
-import io.github.mksfilmoteka.catalog.film.dto.FilmRequest;
-import io.github.mksfilmoteka.catalog.film.dto.FilmResponse;
+import io.github.mksfilmoteka.catalog.film.dto.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -18,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -70,6 +68,15 @@ public class FilmService {
     public DetailedFilmResponse findById(Long id) {
         Film film = getFilmOrThrow(id);
         return filmMapper.filmToDetailedFilmResponse(film);
+    }
+
+    public FilmExistenceResponse checkFilmExistence(FilmExistenceRequest request) {
+        Set<Long> existingFilmIds = filmRepository.findExistingFilmIds(request.filmIds());
+
+        Set<Long> missingFilmIds = new HashSet<>(request.filmIds());
+        missingFilmIds.removeAll(existingFilmIds);
+
+        return new FilmExistenceResponse(missingFilmIds);
     }
 
     @Transactional
