@@ -9,11 +9,11 @@ import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -21,6 +21,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 
     public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
     public static final String CORRELATION_ID_MDC_KEY = "correlationId";
+    private static final Pattern VALID_CORRELATION_ID = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]{0,63}");
 
     @Override
     protected void doFilterInternal(
@@ -42,7 +43,7 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
 
     private String resolveCorrelationId(HttpServletRequest request) {
         String correlationId = request.getHeader(CORRELATION_ID_HEADER);
-        if (StringUtils.hasText(correlationId)) {
+        if (correlationId != null && VALID_CORRELATION_ID.matcher(correlationId).matches()) {
             return correlationId;
         }
         return UUID.randomUUID().toString();
