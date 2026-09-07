@@ -33,7 +33,7 @@ public class OpenApiConfig {
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
                                 .bearerFormat("JWT")
-                                .description("Keycloak bearer JWT. Write operations require the ADMIN realm role.")));
+                                .description("Keycloak bearer JWT. Admin operations require the ADMIN realm role.")));
     }
 
     @Bean
@@ -54,6 +54,10 @@ public class OpenApiConfig {
     }
 
     private boolean isAdminWriteOperation(HandlerMethod handlerMethod) {
+        if (handlerMethod.hasMethodAnnotation(PublicApiOperation.class)) {
+            return false;
+        }
+
         return handlerMethod.hasMethodAnnotation(PostMapping.class)
                 || handlerMethod.hasMethodAnnotation(PutMapping.class)
                 || handlerMethod.hasMethodAnnotation(DeleteMapping.class);

@@ -42,6 +42,12 @@ class SecurityConfigTest {
     }
 
     @Test
+    void shouldAllowPublicFilmExistencePost() throws Exception {
+        mockMvc.perform(post("/api/v1/films/existence"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void shouldRejectUserWrite() throws Exception {
         mockMvc.perform(post("/api/v1/test")
                         .with(jwt().authorities(new SimpleGrantedAuthority("ROLE_USER"))))
@@ -78,6 +84,11 @@ class SecurityConfigTest {
 
         @PostMapping("/api/v1/films/collection")
         String collectionPost() {
+            return "ok";
+        }
+
+        @PostMapping("/api/v1/films/existence")
+        String existencePost() {
             return "ok";
         }
 

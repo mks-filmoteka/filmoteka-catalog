@@ -1,5 +1,6 @@
 package io.github.mksfilmoteka.catalog.film;
 
+import io.github.mksfilmoteka.catalog.config.PublicApiOperation;
 import io.github.mksfilmoteka.catalog.common.PageResponse;
 import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ErrorResponse;
@@ -69,6 +70,7 @@ public class FilmController {
             )
     )
     @PostMapping("/collection")
+    @PublicApiOperation
     public ResponseEntity<PageResponse<FilmResponse>> getFilmCollection(
             @RequestBody @Valid FilmFilter filter,
             @ParameterObject Pageable pageable) {
@@ -124,6 +126,7 @@ public class FilmController {
             )
     )
     @PostMapping("/existence")
+    @PublicApiOperation
     public ResponseEntity<FilmExistenceResponse> checkFilmExistence(@RequestBody @Valid FilmExistenceRequest request) {
         FilmExistenceResponse response = filmService.checkFilmExistence(request);
 
