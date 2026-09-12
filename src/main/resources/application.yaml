@@ -25,6 +25,7 @@ spring:
       hibernate:
         default_schema: filmoteka
         format_sql: true
+        default_batch_fetch_size: 50
 
   security:
     oauth2:
