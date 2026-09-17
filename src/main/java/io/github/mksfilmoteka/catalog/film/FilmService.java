@@ -7,17 +7,23 @@ import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
 import io.github.mksfilmoteka.catalog.director.DirectorService;
 import io.github.mksfilmoteka.catalog.film.dto.*;
+import io.github.mksfilmoteka.catalog.outbox.OutboxEvent;
+import io.github.mksfilmoteka.catalog.outbox.OutboxEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -29,6 +35,11 @@ public class FilmService {
     private final ActorService actorService;
     private final DirectorService directorService;
     private final FilmMapper filmMapper;
+    private final OutboxEventRepository outboxEventRepository;
+    private final JsonMapper jsonMapper;
+
+    @Value("${app.kafka.topics.film-deleted.name}")
+    private String filmDeletedTopic;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("title", "releaseYear", "id");
 
@@ -134,6 +145,23 @@ public class FilmService {
     @Transactional
     public void deleteFilm(Long id) {
         Film film = getFilmOrThrow(id);
+
+        FilmDeletedEvent event = new FilmDeletedEvent(
+                UUID.randomUUID(),
+                film.getId(),
+                film.getPosterName(),
+                Instant.now()
+        );
+        OutboxEvent outboxEvent = new OutboxEvent(
+                event.eventId(),
+                filmDeletedTopic,
+                event.filmId().toString(),
+                jsonMapper.writeValueAsString(event),
+                event.occurredAt(),
+                null
+        );
+        outboxEventRepository.save(outboxEvent);
+
         filmRepository.delete(film);
         log.info("Deleted film id={}", id);
     }

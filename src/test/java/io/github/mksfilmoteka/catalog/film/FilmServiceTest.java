@@ -7,17 +7,26 @@ import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
 import io.github.mksfilmoteka.catalog.director.DirectorService;
 import io.github.mksfilmoteka.catalog.film.dto.*;
+import io.github.mksfilmoteka.catalog.outbox.OutboxEvent;
+import io.github.mksfilmoteka.catalog.outbox.OutboxEventRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -27,6 +36,7 @@ import static io.github.mksfilmoteka.catalog.actor.ActorTestData.loadedActor;
 import static io.github.mksfilmoteka.catalog.director.DirectorTestData.directorRequest;
 import static io.github.mksfilmoteka.catalog.director.DirectorTestData.loadedDirector;
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
+import static io.github.mksfilmoteka.catalog.util.TestUtil.JSON_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,8 +57,19 @@ class FilmServiceTest {
     @Mock
     private DirectorService directorService;
 
+    @Mock
+    private OutboxEventRepository outboxEventRepository;
+
+    @Spy
+    private JsonMapper jsonMapper = JsonMapper.builder().findAndAddModules().build();
+
     @InjectMocks
     private FilmService filmService;
+
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(filmService, "filmDeletedTopic", FILM_DELETED_TOPIC);
+    }
 
     @Test
     void shouldCreateFilm() {
@@ -285,12 +306,30 @@ class FilmServiceTest {
     }
 
     @Test
-    void shouldDeleteFilm() {
+    void shouldSaveFilmDeletedEventAndDeleteFilm() {
         Film film = loadedFilm();
         when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(film));
+        Instant beforeDeletion = Instant.now();
+
         filmService.deleteFilm(FILM_ID);
 
+        Instant afterDeletion = Instant.now();
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(captor.capture());
         verify(filmRepository).delete(film);
+
+        OutboxEvent outboxEvent = captor.getValue();
+        assertThat(outboxEvent.getId()).isNotNull();
+        assertThat(outboxEvent.getTopic()).isEqualTo(FILM_DELETED_TOPIC);
+        assertThat(outboxEvent.getMessageKey()).isEqualTo(Long.toString(FILM_ID));
+        assertThat(outboxEvent.getCreatedTs()).isBetween(beforeDeletion, afterDeletion);
+        assertThat(outboxEvent.getPublishedTs()).isNull();
+
+        FilmDeletedEvent event = JSON_MAPPER.readValue(outboxEvent.getPayload(), FilmDeletedEvent.class);
+        assertThat(event.eventId()).isEqualTo(outboxEvent.getId());
+        assertThat(event.filmId()).isEqualTo(FILM_ID);
+        assertThat(event.posterName()).isEqualTo(FILM_POSTER_NAME);
+        assertThat(event.occurredAt()).isEqualTo(outboxEvent.getCreatedTs());
     }
 
     @Test
@@ -298,6 +337,32 @@ class FilmServiceTest {
         when(filmRepository.findById(FILM_ID)).thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class, () -> filmService.deleteFilm(FILM_ID));
+
+        verify(filmRepository, never()).delete(any(Film.class));
+        verifyNoInteractions(outboxEventRepository, jsonMapper);
+    }
+
+    @Test
+    void shouldNotDeleteFilmWhenEventSerializationFails() {
+        Film film = loadedFilm();
+        when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(film));
+        JacksonException exception = mock(JacksonException.class);
+        doThrow(exception).when(jsonMapper).writeValueAsString(any(FilmDeletedEvent.class));
+
+        assertThrows(JacksonException.class, () -> filmService.deleteFilm(FILM_ID));
+
+        verify(filmRepository, never()).delete(any(Film.class));
+        verifyNoInteractions(outboxEventRepository);
+    }
+
+    @Test
+    void shouldNotDeleteFilmWhenSavingOutboxEventFails() {
+        Film film = loadedFilm();
+        when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(film));
+        var exception = new DataAccessResourceFailureException("Outbox is unavailable");
+        when(outboxEventRepository.save(any(OutboxEvent.class))).thenThrow(exception);
+
+        assertThrows(DataAccessResourceFailureException.class, () -> filmService.deleteFilm(FILM_ID));
 
         verify(filmRepository, never()).delete(any(Film.class));
     }
