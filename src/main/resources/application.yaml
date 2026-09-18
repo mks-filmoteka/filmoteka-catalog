@@ -46,6 +46,8 @@ app:
     topics:
       film-deleted:
         name: ${KAFKA_FILM_DELETED_TOPIC}
+      film-poster-changed:
+        name: ${KAFKA_FILM_POSTER_CHANGED_TOPIC}
 
 logging:
   level:

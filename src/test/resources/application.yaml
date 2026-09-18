@@ -19,3 +19,5 @@ app:
     topics:
       film-deleted:
         name: film-deleted-test
+      film-poster-changed:
+        name: film-poster-changed-test

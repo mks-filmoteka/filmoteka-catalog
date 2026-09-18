@@ -3,10 +3,11 @@ package io.github.mksfilmoteka.catalog.film.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-public record FilmDeletedEvent(
+public record FilmPosterChangedEvent(
         UUID eventId,
         Long filmId,
-        String posterName,
+        String oldPosterName,
+        String newPosterName,
         Instant occurredAt
 ) implements FilmEvent {
 }

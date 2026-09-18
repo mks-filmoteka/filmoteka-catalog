@@ -20,10 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -40,6 +37,9 @@ public class FilmService {
 
     @Value("${app.kafka.topics.film-deleted.name}")
     private String filmDeletedTopic;
+
+    @Value("${app.kafka.topics.film-poster-changed.name}")
+    private String filmPosterChangedTopic;
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("title", "releaseYear", "id");
 
@@ -122,6 +122,7 @@ public class FilmService {
             throw new ConflictException(String.format("Film with title '%s' and release year '%s' already exists",
                     request.title(), request.releaseYear()));
         }
+        String oldPosterName = film.getPosterName();
         filmMapper.updateFilmRequestToFilm(request, film);
 
         film.getActors().clear();
@@ -137,6 +138,21 @@ public class FilmService {
                 .forEach(film::addDirector);
 
         Film saved = filmRepository.save(film);
+
+        String newPosterName = saved.getPosterName();
+
+        if (!Objects.equals(oldPosterName, newPosterName)) {
+            FilmPosterChangedEvent event = new FilmPosterChangedEvent(
+                    UUID.randomUUID(),
+                    saved.getId(),
+                    oldPosterName,
+                    newPosterName,
+                    Instant.now()
+            );
+
+            saveOutboxEvent(filmPosterChangedTopic, event);
+        }
+
         log.info("Updated film id={} with title={}", saved.getId(), saved.getTitle());
 
         return filmMapper.filmToDetailedFilmResponse(saved);
@@ -152,18 +168,22 @@ public class FilmService {
                 film.getPosterName(),
                 Instant.now()
         );
+        saveOutboxEvent(filmDeletedTopic, event);
+
+        filmRepository.delete(film);
+        log.info("Deleted film id={}", id);
+    }
+
+    private void saveOutboxEvent(String topic, FilmEvent event) {
         OutboxEvent outboxEvent = new OutboxEvent(
                 event.eventId(),
-                filmDeletedTopic,
+                topic,
                 event.filmId().toString(),
                 jsonMapper.writeValueAsString(event),
                 event.occurredAt(),
                 null
         );
         outboxEventRepository.save(outboxEvent);
-
-        filmRepository.delete(film);
-        log.info("Deleted film id={}", id);
     }
 
     private Film getFilmOrThrow(Long id) {
