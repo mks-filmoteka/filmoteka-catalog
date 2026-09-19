@@ -20,6 +20,7 @@ public final class FilmTestData {
     public static final String FILM_DESCRIPTION = "film description";
     public static final String FILM_POSTER_NAME = "00000000-0000-0000-0000-000000000000.jpg";
     public static final String FILM_DELETED_TOPIC = "film-deleted-test";
+    public static final String FILM_POSTER_CHANGED_TOPIC = "film-poster-changed-test";
 
     public static Film film() {
         Film film = new Film();

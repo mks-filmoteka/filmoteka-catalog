@@ -69,6 +69,7 @@ class FilmServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(filmService, "filmDeletedTopic", FILM_DELETED_TOPIC);
+        ReflectionTestUtils.setField(filmService, "filmPosterChangedTopic", FILM_POSTER_CHANGED_TOPIC);
     }
 
     @Test
@@ -303,6 +304,47 @@ class FilmServiceTest {
         verify(actorService, times(1)).findOrCreate(actorRequest());
         verify(directorService, times(1)).findOrCreate(directorRequest());
         verify(filmMapper).filmToDetailedFilmResponse(any(Film.class));
+        verifyNoInteractions(outboxEventRepository, jsonMapper);
+    }
+
+    @Test
+    void shouldSaveFilmPosterChangedEventWhenPosterChanges() {
+        Film film = loadedFilm();
+        String oldPosterName = "old-poster.jpg";
+        film.setPosterName(oldPosterName);
+        FilmRequest request = filmRequestFull();
+
+        when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(film));
+        when(actorService.findOrCreate(actorRequest())).thenReturn(loadedActor());
+        when(directorService.findOrCreate(directorRequest())).thenReturn(loadedDirector());
+        doAnswer(invocation -> {
+            FilmRequest update = invocation.getArgument(0);
+            Film target = invocation.getArgument(1);
+            target.setPosterName(update.posterName());
+            return null;
+        }).when(filmMapper).updateFilmRequestToFilm(request, film);
+        when(filmRepository.save(film)).thenReturn(film);
+        Instant beforeUpdate = Instant.now();
+
+        filmService.updateFilm(FILM_ID, request);
+
+        Instant afterUpdate = Instant.now();
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(captor.capture());
+
+        OutboxEvent outboxEvent = captor.getValue();
+        assertThat(outboxEvent.getId()).isNotNull();
+        assertThat(outboxEvent.getTopic()).isEqualTo(FILM_POSTER_CHANGED_TOPIC);
+        assertThat(outboxEvent.getMessageKey()).isEqualTo(Long.toString(FILM_ID));
+        assertThat(outboxEvent.getCreatedTs()).isBetween(beforeUpdate, afterUpdate);
+        assertThat(outboxEvent.getPublishedTs()).isNull();
+
+        FilmPosterChangedEvent event = JSON_MAPPER.readValue(outboxEvent.getPayload(), FilmPosterChangedEvent.class);
+        assertThat(event.eventId()).isEqualTo(outboxEvent.getId());
+        assertThat(event.filmId()).isEqualTo(FILM_ID);
+        assertThat(event.oldPosterName()).isEqualTo(oldPosterName);
+        assertThat(event.newPosterName()).isEqualTo(FILM_POSTER_NAME);
+        assertThat(event.occurredAt()).isEqualTo(outboxEvent.getCreatedTs());
     }
 
     @Test
