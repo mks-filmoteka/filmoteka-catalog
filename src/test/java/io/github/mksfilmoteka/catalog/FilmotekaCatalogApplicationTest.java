@@ -25,10 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(
-        classes = FilmotekaCatalogApplication.class,
-        properties = {"spring.kafka.admin.auto-create=false", "app.outbox.publisher.enabled=false"}
-)
+@SpringBootTest(classes = FilmotekaCatalogApplication.class)
 @AutoConfigureMockMvc
 @Import({RepositoryTestConfig.class, SecurityConfig.class, KeycloakRealmRoleConverter.class})
 @Testcontainers(disabledWithoutDocker = true)

@@ -42,12 +42,18 @@ spring:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
   kafka:
     topics:
       film-deleted:
         name: ${KAFKA_FILM_DELETED_TOPIC}
       film-poster-changed:
         name: ${KAFKA_FILM_POSTER_CHANGED_TOPIC}
+
+  outbox:
+    cleanup:
+      enabled: true
+      retention-days: 7
 
 logging:
   level:
