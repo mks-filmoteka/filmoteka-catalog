@@ -1,4 +1,7 @@
 spring:
+  kafka:
+    admin:
+      auto-create: false
   security:
     oauth2:
       resourceserver:
@@ -13,5 +16,17 @@ logging:
     root: WARN
 
 app:
+  outbox:
+    publisher:
+      enabled: false
+    cleanup:
+      enabled: false
+      retention-days: 3
   cors:
     allowed-origins: http://localhost:5173
+  kafka:
+    topics:
+      film-deleted:
+        name: film-deleted-test
+      film-poster-changed:
+        name: film-poster-changed-test
