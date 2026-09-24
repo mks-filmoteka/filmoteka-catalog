@@ -10,6 +10,14 @@ spring:
           jwk-set-uri: http://localhost:8180/realms/filmoteka/protocol/openid-connect/certs
           audiences:
             - filmoteka-api
+  flyway:
+    schemas: filmoteka
+  jpa:
+    properties:
+      hibernate:
+        default_schema: filmoteka
+
+
 
 logging:
   level:

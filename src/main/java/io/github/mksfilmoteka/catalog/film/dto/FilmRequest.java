@@ -13,6 +13,10 @@ import java.util.List;
 
 @Schema(description = "Request for creating or updating a film")
 public record FilmRequest(
+        @Schema(description = "Film revision", example = "0")
+        @PositiveOrZero
+        Long version,
+
         @Schema(description = "Film title", example = "Matrix")
         @NotBlank
         @Size(max = 255)

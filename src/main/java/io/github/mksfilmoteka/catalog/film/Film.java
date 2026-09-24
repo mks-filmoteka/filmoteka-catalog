@@ -21,6 +21,9 @@ import static lombok.AccessLevel.PRIVATE;
         uniqueConstraints = @UniqueConstraint(columnNames = {"title", "release_year"})
 )
 public class Film extends BaseEntity {
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @Column(nullable = false)
     private String title;

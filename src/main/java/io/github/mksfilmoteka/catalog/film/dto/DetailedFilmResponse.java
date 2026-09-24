@@ -11,6 +11,9 @@ import java.util.List;
 
 @Schema(description = "Detailed film response with actors and directors")
 public record DetailedFilmResponse(
+        @Schema(description = "Film revision number", example = "0")
+        Long version,
+
         @Schema(description = "Film id", example = "1")
         Long id,
 

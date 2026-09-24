@@ -36,11 +36,13 @@ public final class FilmTestData {
     public static Film loadedFilm() {
         Film film = film();
         film.setId(FILM_ID);
+        film.setVersion(0L);
         return film;
     }
 
     public static FilmRequest filmRequest() {
         return new FilmRequest(
+                0L,
                 FILM_TITLE,
                 RELEASE_YEAR,
                 testListOf(Country.UNITED_STATES, Country.ITALY),
@@ -54,6 +56,7 @@ public final class FilmTestData {
 
     public static FilmRequest invalidFilmRequest() {
         return new FilmRequest(
+                0L,
                 "",
                 1700,
                 testListOf(),
@@ -67,6 +70,7 @@ public final class FilmTestData {
 
     public static FilmRequest filmRequestFull() {
         return new FilmRequest(
+                0L,
                 FILM_TITLE,
                 RELEASE_YEAR,
                 testListOf(Country.UNITED_STATES, Country.ITALY),
@@ -80,6 +84,7 @@ public final class FilmTestData {
 
     public static FilmRequest filmRequestWithDuplications() {
         return new FilmRequest(
+                0L,
                 FILM_TITLE,
                 RELEASE_YEAR,
                 testListOf(Country.UNITED_STATES, Country.ITALY),
@@ -93,6 +98,7 @@ public final class FilmTestData {
 
     public static FilmRequest updateFilmRequest() {
         return new FilmRequest(
+                0L,
                 "updated title",
                 1999,
                 testListOf(Country.CANADA),
@@ -106,6 +112,7 @@ public final class FilmTestData {
 
     public static DetailedFilmResponse detailedFilmResponse() {
         return new DetailedFilmResponse(
+                0L,
                 FILM_ID,
                 FILM_TITLE,
                 RELEASE_YEAR,
@@ -120,6 +127,7 @@ public final class FilmTestData {
 
     public static DetailedFilmResponse detailedFilmResponseFull() {
         return new DetailedFilmResponse(
+                0L,
                 FILM_ID,
                 FILM_TITLE,
                 RELEASE_YEAR,
