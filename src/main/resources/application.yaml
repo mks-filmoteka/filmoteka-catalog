@@ -37,6 +37,12 @@ spring:
             - ${AUTH_AUDIENCE}
 
   kafka:
+    admin:
+      operation-timeout: 5s
+      close-timeout: 2s
+    properties:
+      "[reconnect.backoff.ms]": 1000
+      "[reconnect.backoff.max.ms]": 10000
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
 
 app:
@@ -44,12 +50,6 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
   kafka:
-    admin:
-      operation-timeout: 5s
-      close-timeout: 2s
-    properties:
-      "[reconnect.backoff.ms]": 1000
-      "[reconnect.backoff.max.ms]": 10000
     topics:
       film-deleted:
         name: ${KAFKA_FILM_DELETED_TOPIC}
