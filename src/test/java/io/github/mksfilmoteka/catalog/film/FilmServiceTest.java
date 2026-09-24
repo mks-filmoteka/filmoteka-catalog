@@ -273,7 +273,7 @@ class FilmServiceTest {
         assertThrows(ConflictException.class, () -> filmService.updateFilm(FILM_ID, request));
 
         verify(filmRepository).existsByTitleAndReleaseYear(FILM_TITLE, RELEASE_YEAR);
-        verify(filmRepository, never()).save(any());
+        verify(filmRepository, never()).saveAndFlush(any());
         verifyNoInteractions(filmMapper, actorService, directorService);
     }
 
@@ -289,7 +289,7 @@ class FilmServiceTest {
 
         doAnswer(updateTitleOnly()).when(filmMapper).updateFilmRequestToFilm(any(), any());
 
-        when(filmRepository.save(any(Film.class)))
+        when(filmRepository.saveAndFlush(any(Film.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(filmMapper.filmToDetailedFilmResponse(any(Film.class))).thenReturn(detailedFilmResponseFull());
 
@@ -298,7 +298,7 @@ class FilmServiceTest {
         assertThat(response).isEqualTo(detailedFilmResponseFull());
         ArgumentCaptor<Film> captor = ArgumentCaptor.forClass(Film.class);
 
-        verify(filmRepository).save(captor.capture());
+        verify(filmRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getTitle()).isEqualTo(FILM_TITLE);
         verify(filmMapper).updateFilmRequestToFilm(request, loadedFilm);
         verify(actorService, times(1)).findOrCreate(actorRequest());
@@ -323,7 +323,7 @@ class FilmServiceTest {
             target.setPosterName(update.posterName());
             return null;
         }).when(filmMapper).updateFilmRequestToFilm(request, film);
-        when(filmRepository.save(film)).thenReturn(film);
+        when(filmRepository.saveAndFlush(film)).thenReturn(film);
         Instant beforeUpdate = Instant.now();
 
         filmService.updateFilm(FILM_ID, request);
@@ -345,6 +345,21 @@ class FilmServiceTest {
         assertThat(event.oldPosterName()).isEqualTo(oldPosterName);
         assertThat(event.newPosterName()).isEqualTo(FILM_POSTER_NAME);
         assertThat(event.occurredAt()).isEqualTo(outboxEvent.getCreatedTs());
+    }
+
+    @Test
+    void shouldRejectStaleUpdateWithoutChangingPosterOrCreatingCleanupEvent() {
+        Film film = loadedFilm();
+        film.setVersion(1L);
+        film.setPosterName("current-poster.jpg");
+
+        FilmRequest staleRequest = filmRequestFull();
+        when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(film));
+
+        assertThrows(ConflictException.class, () -> filmService.updateFilm(FILM_ID, staleRequest));
+        assertThat(film.getPosterName()).isEqualTo("current-poster.jpg");
+        verify(filmRepository, never()).saveAndFlush(any());
+        verifyNoInteractions(filmMapper, actorService, directorService, outboxEventRepository, jsonMapper);
     }
 
     @Test

@@ -13,10 +13,12 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface FilmMapper {
 
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "actors", ignore = true)
     @Mapping(target = "directors", ignore = true)
     Film filmRequestToFilm(FilmRequest request);
 
+    @Mapping(target = "version", ignore = true)
     @Mapping(target = "actors", ignore = true)
     @Mapping(target = "directors", ignore = true)
     void updateFilmRequestToFilm(FilmRequest request, @MappingTarget Film film);

@@ -116,7 +116,13 @@ public class FilmService {
 
     @Transactional
     public DetailedFilmResponse updateFilm(Long id, FilmRequest request) {
+        if (request.version() == null) {
+            throw new BadRequestException("Film version is required for updates");
+        }
         Film film = getFilmOrThrow(id);
+        if (!Objects.equals(request.version(), film.getVersion())) {
+            throw new ConflictException("Film was already changed by another request");
+        }
         if ((!film.getTitle().equals(request.title()) || !film.getReleaseYear().equals(request.releaseYear()))
                 && filmRepository.existsByTitleAndReleaseYear(request.title(), request.releaseYear())) {
             throw new ConflictException(String.format("Film with title '%s' and release year '%s' already exists",
@@ -137,7 +143,7 @@ public class FilmService {
                 .map(directorService::findOrCreate)
                 .forEach(film::addDirector);
 
-        Film saved = filmRepository.save(film);
+        Film saved = filmRepository.saveAndFlush(film);
 
         String newPosterName = saved.getPosterName();
 

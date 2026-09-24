@@ -29,6 +29,7 @@ class FilmMapperTest {
     @Test
     void shouldMapFilmRequestToFilmWithDistinctEnums() {
         FilmRequest request = new FilmRequest(
+                0L,
                 FILM_TITLE,
                 RELEASE_YEAR,
                 testListOf(Country.UNITED_STATES, Country.UNITED_STATES, Country.ITALY),
