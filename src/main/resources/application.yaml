@@ -78,3 +78,16 @@ springdoc:
     operationsSorter: method
     tagsSorter: alpha
     display-request-duration: true
+
+management:
+  endpoint:
+    health:
+      show-details: when-authorized
+      roles: ADMIN
+      group:
+        readiness:
+          include: readinessState,db
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
