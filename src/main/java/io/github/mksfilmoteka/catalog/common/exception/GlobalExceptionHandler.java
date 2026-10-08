@@ -3,14 +3,22 @@ package io.github.mksfilmoteka.catalog.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.exc.InvalidFormatException;
 
@@ -23,7 +31,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
@@ -54,10 +62,25 @@ public class GlobalExceptionHandler {
                 .body(buildResponse(HttpStatus.CONFLICT, message, request, ErrorCode.CONFLICT));
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, HttpServletRequest request) {
 
+        String message = "The request conflicts with existing data";
+        log.warn("Data integrity violation. path={}, message={}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(buildResponse(HttpStatus.CONFLICT, message, request, ErrorCode.CONFLICT));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            @NonNull MethodArgumentNotValidException ex,
+            @NonNull HttpHeaders headers,
+            @NonNull HttpStatusCode status,
+            @NonNull WebRequest webRequest) {
+
+        HttpServletRequest request = servletRequest(webRequest);
         List<ErrorDetail> details = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -86,11 +109,15 @@ public class GlobalExceptionHandler {
                 .body(buildResponse(message, request, ErrorCode.BAD_REQUEST, errorDetails));
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(
-            HttpMessageNotReadableException ex, HttpServletRequest request) {
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(
+            @NonNull HttpMessageNotReadableException ex,
+            @NonNull HttpHeaders headers,
+            @NonNull HttpStatusCode status,
+            @NonNull WebRequest webRequest) {
 
-        String message = ex.getMessage();
+        HttpServletRequest request = servletRequest(webRequest);
+        String message = "Malformed request body";
         Throwable cause = ex.getMostSpecificCause();
         List<ErrorDetail> errorDetails = new ArrayList<>();
 
@@ -124,6 +151,53 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error. path={}", request.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, request, ErrorCode.INTERNAL_ERROR));
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(
+            @NonNull Exception ex,
+            @Nullable Object body,
+            @NonNull HttpHeaders headers,
+            @NonNull HttpStatusCode statusCode,
+            @NonNull WebRequest webRequest) {
+
+        HttpServletRequest request = servletRequest(webRequest);
+        HttpStatus status = HttpStatus.valueOf(statusCode.value());
+
+        if (status.is5xxServerError()) {
+            log.error("Unexpected error. path={}", request.getRequestURI(), ex);
+        } else {
+            log.warn("Request rejected. path={}, status={}, message={}",
+                    request.getRequestURI(), status.value(), ex.getMessage());
+        }
+
+        ErrorResponse errorResponse = buildResponse(status, resolveMessage(ex, status), request, resolveErrorCode(status));
+        return super.handleExceptionInternal(ex, errorResponse, headers, statusCode, webRequest);
+    }
+
+    private String resolveMessage(Exception ex, HttpStatus status) {
+        if (status.is5xxServerError()) {
+            return "Unexpected error occurred";
+        }
+        if (ex instanceof org.springframework.web.ErrorResponse errorResponse
+                && errorResponse.getBody().getDetail() != null) {
+            return errorResponse.getBody().getDetail();
+        }
+        return status.getReasonPhrase();
+    }
+
+    private ErrorCode resolveErrorCode(HttpStatus status) {
+        return switch (status) {
+            case NOT_FOUND -> ErrorCode.NOT_FOUND;
+            case CONFLICT -> ErrorCode.CONFLICT;
+            case METHOD_NOT_ALLOWED -> ErrorCode.METHOD_NOT_ALLOWED;
+            case UNSUPPORTED_MEDIA_TYPE -> ErrorCode.UNSUPPORTED_MEDIA_TYPE;
+            default -> status.is5xxServerError() ? ErrorCode.INTERNAL_ERROR : ErrorCode.BAD_REQUEST;
+        };
+    }
+
+    private HttpServletRequest servletRequest(WebRequest webRequest) {
+        return ((ServletWebRequest) webRequest).getRequest();
     }
 
     private ErrorResponse buildResponse(
