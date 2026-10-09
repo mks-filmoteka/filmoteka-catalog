@@ -20,7 +20,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static io.github.mksfilmoteka.catalog.actor.ActorTestData.ACTOR_NAME;
 import static io.github.mksfilmoteka.catalog.director.DirectorTestData.DIRECTOR_NAME;
@@ -261,6 +264,54 @@ class FilmControllerTest {
                 .andExpect(jsonPath("$.message").value("Film ids are required for collection search"));
 
         verify(filmService, never()).getFilmCollection(any(), any());
+    }
+
+    @Test
+    void shouldThrowOnFilmCollectionIfTooManyIds() throws Exception {
+        Set<Long> ids = LongStream.rangeClosed(1, 501).boxed().collect(Collectors.toSet());
+
+        mockMvc.perform(post("/api/v1/films/collection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_MAPPER.writeValueAsString(Map.of("ids", ids))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ErrorCode.VALIDATION_FAILED.name()))
+                .andExpect(jsonPath("$.errorDetails[0].field").value("ids"));
+
+        verify(filmService, never()).getFilmCollection(any(), any());
+    }
+
+    @Test
+    void shouldThrowOnFilmCollectionIfIdIsNotPositive() throws Exception {
+        mockMvc.perform(post("/api/v1/films/collection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"ids\": [1, 0]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ErrorCode.VALIDATION_FAILED.name()));
+
+        verify(filmService, never()).getFilmCollection(any(), any());
+    }
+
+    @Test
+    void shouldAllowFilmCollectionWithMaxIds() throws Exception {
+        Set<Long> ids = LongStream.rangeClosed(1, 500).boxed().collect(Collectors.toSet());
+        when(filmService.getFilmCollection(any(), any()))
+                .thenReturn(new PageResponse<>(List.of(), 0, 100, 0, 0));
+
+        mockMvc.perform(post("/api/v1/films/collection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(JSON_MAPPER.writeValueAsString(Map.of("ids", ids))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldThrowOnGetFilmsIfTooManyIds() throws Exception {
+        String[] ids = LongStream.rangeClosed(1, 501).mapToObj(String::valueOf).toArray(String[]::new);
+
+        mockMvc.perform(get("/api/v1/films").param("ids", ids))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(ErrorCode.VALIDATION_FAILED.name()));
+
+        verify(filmService, never()).getFilms(any(), any());
     }
 
     @Test
