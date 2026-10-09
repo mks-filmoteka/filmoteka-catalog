@@ -5,6 +5,8 @@ import io.github.mksfilmoteka.catalog.film.Genre;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.util.Set;
@@ -32,6 +34,7 @@ public record FilmFilter(
         Set<Country> countries,
 
         @Schema(description = "Film id filter for collection requests", example = "[1, 2, 3]")
-        Set<Long> ids
+        @Size(max = 500)
+        Set<@NotNull @Positive Long> ids
 ) {
 }
