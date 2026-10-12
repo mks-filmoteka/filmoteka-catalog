@@ -123,6 +123,34 @@ class FilmRepositoryTest {
     }
 
     @Test
+    void shouldTreatPercentInTitleSearchAsLiteralCharacter() {
+        Film filmWithPercent = film();
+        filmWithPercent.setTitle("100% Wolf");
+        Film filmWithoutPercent = film();
+        filmWithoutPercent.setTitle("1000 Words");
+        filmRepository.saveAndFlush(filmWithPercent);
+        filmRepository.saveAndFlush(filmWithoutPercent);
+
+        Page<Film> page = filmRepository.findAll(FilmSpecification.hasTitle("100%"), PageRequest.of(0, 100));
+
+        assertThat(page.getContent()).extracting(Film::getTitle).containsExactly("100% Wolf");
+    }
+
+    @Test
+    void shouldTreatUnderscoreInTitleSearchAsLiteralCharacter() {
+        Film filmWithUnderscore = film();
+        filmWithUnderscore.setTitle("Up_Down");
+        Film filmWithoutUnderscore = film();
+        filmWithoutUnderscore.setTitle("Up-Down");
+        filmRepository.saveAndFlush(filmWithUnderscore);
+        filmRepository.saveAndFlush(filmWithoutUnderscore);
+
+        Page<Film> page = filmRepository.findAll(FilmSpecification.hasTitle("p_d"), PageRequest.of(0, 100));
+
+        assertThat(page.getContent()).extracting(Film::getTitle).containsExactly("Up_Down");
+    }
+
+    @Test
     void shouldReturnFilmsSortedByTitleAscending() {
         Film filmA = film();
         filmA.setTitle("A");

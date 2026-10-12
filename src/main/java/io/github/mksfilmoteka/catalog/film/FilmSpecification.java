@@ -4,6 +4,7 @@ import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.query.EscapeCharacter;
 
 import java.util.Set;
 
@@ -37,10 +38,16 @@ public final class FilmSpecification {
 
     public static Specification<Film> hasTitle(String title) {
 
-        return (root, _, cb) ->
-                title == null || title.isBlank()
-                        ? cb.conjunction()
-                        : cb.like(cb.lower(root.get("title")), "%" + title.toLowerCase() + "%");
+        return (root, _, cb) -> {
+            if (title == null || title.isBlank()) {
+                return cb.conjunction();
+            }
+            String escapedTitle = EscapeCharacter.DEFAULT.escape(title.toLowerCase());
+            return cb.like(
+                    cb.lower(root.get("title")),
+                    "%" + escapedTitle + "%",
+                    EscapeCharacter.DEFAULT.getEscapeCharacter());
+        };
     }
 
     public static Specification<Film> hasCountries(Set<Country> countries) {
