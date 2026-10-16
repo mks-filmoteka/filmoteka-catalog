@@ -1,9 +1,8 @@
 package io.github.mksfilmoteka.catalog.film.dto;
 
-import io.github.mksfilmoteka.catalog.actor.dto.ActorRequest;
-import io.github.mksfilmoteka.catalog.director.dto.DirectorRequest;
 import io.github.mksfilmoteka.catalog.film.Country;
 import io.github.mksfilmoteka.catalog.film.Genre;
+import io.github.mksfilmoteka.catalog.person.dto.PersonRequest;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -49,15 +48,15 @@ public record FilmRequest(
         @Size(max = 5)
         List<@NotNull @Valid Genre> genres,
 
-        @ArraySchema(schema = @Schema(implementation = ActorRequest.class))
+        @ArraySchema(schema = @Schema(implementation = PersonRequest.class))
         @NotEmpty
         @Size(max = 20)
-        List<@NotNull @Valid ActorRequest> actors,
+        List<@NotNull @Valid PersonRequest> actors,
 
-        @ArraySchema(schema = @Schema(implementation = DirectorRequest.class))
+        @ArraySchema(schema = @Schema(implementation = PersonRequest.class))
         @NotEmpty
         @Size(max = 5)
-        List<@NotNull @Valid DirectorRequest> directors
+        List<@NotNull @Valid PersonRequest> directors
 ) {
 
 }

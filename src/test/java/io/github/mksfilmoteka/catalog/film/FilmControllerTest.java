@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static io.github.mksfilmoteka.catalog.actor.ActorTestData.ACTOR_NAME;
-import static io.github.mksfilmoteka.catalog.director.DirectorTestData.DIRECTOR_NAME;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.ACTOR_NAME;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.DIRECTOR_NAME;
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.JSON_MAPPER;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.adminJwt;

@@ -15,8 +15,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import tools.jackson.databind.JsonNode;
 
-import static io.github.mksfilmoteka.catalog.actor.ActorTestData.ACTOR_NAME;
-import static io.github.mksfilmoteka.catalog.director.DirectorTestData.DIRECTOR_NAME;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.ACTOR_NAME;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.DIRECTOR_NAME;
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.JSON_MAPPER;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.adminJwt;
@@ -66,20 +66,6 @@ class FilmotekaCatalogApplicationTest {
                 .andExpect(jsonPath("$.title").value(FILM_TITLE))
                 .andExpect(jsonPath("$.actors[0].id").value(actorId))
                 .andExpect(jsonPath("$.directors[0].id").value(directorId));
-
-        mockMvc.perform(get("/api/v1/actors/{id}", actorId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(actorId))
-                .andExpect(jsonPath("$.name").value(ACTOR_NAME))
-                .andExpect(jsonPath("$.films[0].id").value(filmId))
-                .andExpect(jsonPath("$.films[0].title").value(FILM_TITLE));
-
-        mockMvc.perform(get("/api/v1/directors/{id}", directorId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(directorId))
-                .andExpect(jsonPath("$.name").value(DIRECTOR_NAME))
-                .andExpect(jsonPath("$.films[0].id").value(filmId))
-                .andExpect(jsonPath("$.films[0].title").value(FILM_TITLE));
 
         mockMvc.perform(get("/api/v1/films")
                         .param("title", FILM_TITLE)

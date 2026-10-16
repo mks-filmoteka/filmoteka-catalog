@@ -1,14 +1,15 @@
 package io.github.mksfilmoteka.catalog.film;
 
-import io.github.mksfilmoteka.catalog.actor.ActorService;
 import io.github.mksfilmoteka.catalog.common.PageResponse;
 import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
-import io.github.mksfilmoteka.catalog.director.DirectorService;
 import io.github.mksfilmoteka.catalog.film.dto.*;
 import io.github.mksfilmoteka.catalog.outbox.OutboxEvent;
 import io.github.mksfilmoteka.catalog.outbox.OutboxEventRepository;
+import io.github.mksfilmoteka.catalog.person.Person;
+import io.github.mksfilmoteka.catalog.person.PersonService;
+import io.github.mksfilmoteka.catalog.person.dto.PersonRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,8 +30,7 @@ import java.util.*;
 public class FilmService {
 
     private final FilmRepository filmRepository;
-    private final ActorService actorService;
-    private final DirectorService directorService;
+    private final PersonService personService;
     private final FilmMapper filmMapper;
     private final OutboxEventRepository outboxEventRepository;
     private final JsonMapper jsonMapper;
@@ -98,15 +98,7 @@ public class FilmService {
         }
 
         Film film = filmMapper.filmRequestToFilm(request);
-
-        request.actors().stream()
-                .distinct()
-                .map(actorService::findOrCreate)
-                .forEach(film::addActor);
-        request.directors().stream()
-                .distinct()
-                .map(directorService::findOrCreate)
-                .forEach(film::addDirector);
+        setPeople(film, request);
 
         Film saved = filmRepository.save(film);
         log.info("Created film id={}, title={}", saved.getId(), saved.getTitle());
@@ -130,18 +122,7 @@ public class FilmService {
         }
         String oldPosterName = film.getPosterName();
         filmMapper.updateFilmRequestToFilm(request, film);
-
-        film.getActors().clear();
-        request.actors().stream()
-                .distinct()
-                .map(actorService::findOrCreate)
-                .forEach(film::addActor);
-
-        film.getDirectors().clear();
-        request.directors().stream()
-                .distinct()
-                .map(directorService::findOrCreate)
-                .forEach(film::addDirector);
+        setPeople(film, request);
 
         Film saved = filmRepository.saveAndFlush(film);
 
@@ -178,6 +159,20 @@ public class FilmService {
 
         filmRepository.delete(film);
         log.info("Deleted film id={}", id);
+    }
+
+    private void setPeople(Film film, FilmRequest request) {
+        film.getActors().clear();
+        findOrCreatePeople(request.actors()).forEach(film::addActor);
+        film.getDirectors().clear();
+        findOrCreatePeople(request.directors()).forEach(film::addDirector);
+    }
+
+    private List<Person> findOrCreatePeople(List<PersonRequest> requests) {
+        return requests.stream()
+                .map(personService::findOrCreate)
+                .distinct()
+                .toList();
     }
 
     private void saveOutboxEvent(String topic, FilmEvent event) {

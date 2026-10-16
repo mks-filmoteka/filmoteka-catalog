@@ -75,12 +75,7 @@ public class OpenApiConfig {
     }
 
     @Bean
-    public GroupedOpenApi actorApi() {
-        return GroupedOpenApi.builder().group("actors").pathsToMatch("/api/v1/actors/**").build();
-    }
-
-    @Bean
-    public GroupedOpenApi directorApi() {
-        return GroupedOpenApi.builder().group("directors").pathsToMatch("/api/v1/directors/**").build();
+    public GroupedOpenApi personApi() {
+        return GroupedOpenApi.builder().group("people").pathsToMatch("/api/v1/people/**").build();
     }
 }
