@@ -2,6 +2,9 @@ package io.github.mksfilmoteka.catalog.film;
 
 import io.github.mksfilmoteka.catalog.config.RepositoryTestConfig;
 import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
+import io.github.mksfilmoteka.catalog.person.Person;
+import io.github.mksfilmoteka.catalog.person.PersonRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -12,10 +15,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.person;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.testListOf;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.testSetOf;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +33,12 @@ class FilmRepositoryTest {
 
     @Autowired
     private FilmRepository filmRepository;
+
+    @Autowired
+    private PersonRepository personRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @Test
     void shouldSaveAndLoadFilm() {
@@ -169,5 +180,48 @@ class FilmRepositoryTest {
         assertThat(page.getContent())
                 .extracting(Film::getTitle)
                 .containsExactly("A", "B", "C");
+    }
+
+    @Test
+    void shouldKeepCastOrderAndBothRolesOfOnePerson() {
+        Person eastwood = personRepository.save(person("Clint Eastwood"));
+        Person hackman = personRepository.save(person("Gene Hackman"));
+        Film film = film();
+        film.addActor(hackman);
+        film.addActor(eastwood);
+        film.addDirector(eastwood);
+        Long filmId = filmRepository.saveAndFlush(film).getId();
+        entityManager.clear();
+
+        Film loaded = filmRepository.findById(filmId).orElseThrow();
+
+        assertThat(loaded.getActors()).extracting(Person::getName).containsExactly("Gene Hackman", "Clint Eastwood");
+        assertThat(loaded.getDirectors()).extracting(Person::getName).containsExactly("Clint Eastwood");
+    }
+
+    @Test
+    void shouldReorderAndRemoveCast() {
+        Person first = personRepository.save(person("First"));
+        Person second = personRepository.save(person("Second"));
+        Person third = personRepository.save(person("Third"));
+        Film film = film();
+        film.addActor(first);
+        film.addActor(second);
+        film.addActor(third);
+        film.addDirector(first);
+        Long filmId = filmRepository.saveAndFlush(film).getId();
+        entityManager.clear();
+
+        Film loaded = filmRepository.findById(filmId).orElseThrow();
+        List<Person> actors = List.copyOf(loaded.getActors());
+        loaded.getActors().clear();
+        loaded.addActor(actors.get(2));
+        loaded.addActor(actors.get(0));
+        filmRepository.saveAndFlush(loaded);
+        entityManager.clear();
+
+        Film reloaded = filmRepository.findById(filmId).orElseThrow();
+        assertThat(reloaded.getActors()).extracting(Person::getName).containsExactly("Third", "First");
+        assertThat(reloaded.getDirectors()).extracting(Person::getName).containsExactly("First");
     }
 }

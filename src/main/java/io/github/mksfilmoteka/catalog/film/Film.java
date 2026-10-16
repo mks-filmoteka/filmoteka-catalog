@@ -1,8 +1,7 @@
 package io.github.mksfilmoteka.catalog.film;
 
-import io.github.mksfilmoteka.catalog.actor.Actor;
 import io.github.mksfilmoteka.catalog.common.BaseEntity;
-import io.github.mksfilmoteka.catalog.director.Director;
+import io.github.mksfilmoteka.catalog.person.Person;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -63,37 +62,39 @@ public class Film extends BaseEntity {
     @JoinTable(
             name = "film_actor",
             joinColumns = @JoinColumn(name = "film_id", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "actor_id", nullable = false),
-            indexes = @Index(columnList = "actor_id")
+            inverseJoinColumns = @JoinColumn(name = "person_id", nullable = false),
+            indexes = @Index(columnList = "person_id")
     )
-    private List<Actor> actors = new ArrayList<>();
+    @OrderColumn(name = "position")
+    private List<Person> actors = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
             name = "film_director",
             joinColumns = @JoinColumn(name = "film_id", nullable = false),
-            inverseJoinColumns = @JoinColumn(name = "director_id", nullable = false),
-            indexes = @Index(columnList = "director_id")
+            inverseJoinColumns = @JoinColumn(name = "person_id", nullable = false),
+            indexes = @Index(columnList = "person_id")
     )
-    private List<Director> directors = new ArrayList<>();
+    @OrderColumn(name = "position")
+    private List<Person> directors = new ArrayList<>();
 
-    public void addActor(Actor actor) {
-        actors.add(actor);
-        actor.getFilms().add(this);
+    public void addActor(Person person) {
+        actors.add(person);
+        person.getActingFilms().add(this);
     }
 
-    public void removeActor(Actor actor) {
-        actors.remove(actor);
-        actor.getFilms().remove(this);
+    public void removeActor(Person person) {
+        actors.remove(person);
+        person.getActingFilms().remove(this);
     }
 
-    public void addDirector(Director director) {
-        directors.add(director);
-        director.getFilms().add(this);
+    public void addDirector(Person person) {
+        directors.add(person);
+        person.getDirectingFilms().add(this);
     }
 
-    public void removeDirector(Director director) {
-        directors.remove(director);
-        director.getFilms().remove(this);
+    public void removeDirector(Person person) {
+        directors.remove(person);
+        person.getDirectingFilms().remove(this);
     }
 }

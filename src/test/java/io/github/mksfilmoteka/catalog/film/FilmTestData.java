@@ -5,10 +5,7 @@ import io.github.mksfilmoteka.catalog.film.dto.FilmFilter;
 import io.github.mksfilmoteka.catalog.film.dto.FilmRequest;
 import io.github.mksfilmoteka.catalog.film.dto.FilmResponse;
 
-import static io.github.mksfilmoteka.catalog.actor.ActorTestData.actorRequest;
-import static io.github.mksfilmoteka.catalog.actor.ActorTestData.actorResponse;
-import static io.github.mksfilmoteka.catalog.director.DirectorTestData.directorRequest;
-import static io.github.mksfilmoteka.catalog.director.DirectorTestData.directorResponse;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.*;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.testListOf;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.testSetOf;
 

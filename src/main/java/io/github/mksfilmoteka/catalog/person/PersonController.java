@@ -1,8 +1,8 @@
-package io.github.mksfilmoteka.catalog.actor;
+package io.github.mksfilmoteka.catalog.person;
 
-import io.github.mksfilmoteka.catalog.actor.dto.ActorRequest;
-import io.github.mksfilmoteka.catalog.actor.dto.DetailedActorResponse;
 import io.github.mksfilmoteka.catalog.common.exception.ErrorResponse;
+import io.github.mksfilmoteka.catalog.person.dto.DetailedPersonResponse;
+import io.github.mksfilmoteka.catalog.person.dto.PersonRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,45 +13,45 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Actors", description = "Operations related to actors")
+@Tag(name = "People", description = "Operations related to people")
 @RestController
-@RequestMapping("/api/v1/actors")
+@RequestMapping("/api/v1/people")
 @RequiredArgsConstructor
-public class ActorController {
+public class PersonController {
 
-    private final ActorService actorService;
+    private final PersonService personService;
 
     @Operation(
-            summary = "Get actor by id",
-            description = "Returns actor with details including list films"
+            summary = "Get person by id",
+            description = "Returns person with details and the films they acted in or directed"
     )
-    @ApiResponse(responseCode = "200", description = "Actor returned",
+    @ApiResponse(responseCode = "200", description = "Person returned",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = DetailedActorResponse.class)
+                    schema = @Schema(implementation = DetailedPersonResponse.class)
             )
     )
-    @ApiResponse(responseCode = "404", description = "Actor not found",
+    @ApiResponse(responseCode = "404", description = "Person not found",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ErrorResponse.class)
             )
     )
     @GetMapping("/{id}")
-    public ResponseEntity<DetailedActorResponse> getActor(@PathVariable Long id) {
-        DetailedActorResponse response = actorService.findById(id);
+    public ResponseEntity<DetailedPersonResponse> getPerson(@PathVariable Long id) {
+        DetailedPersonResponse response = personService.findById(id);
 
         return ResponseEntity.ok(response);
     }
 
     @Operation(
-            summary = "Update actor",
-            description = "Update actor fields"
+            summary = "Update person",
+            description = "Update person details"
     )
-    @ApiResponse(responseCode = "200", description = "Actor updated",
+    @ApiResponse(responseCode = "200", description = "Person updated",
             content = @Content(
                     mediaType = "application/json",
-                    schema = @Schema(implementation = DetailedActorResponse.class)
+                    schema = @Schema(implementation = DetailedPersonResponse.class)
             )
     )
     @ApiResponse(responseCode = "400", description = "Validation error",
@@ -60,7 +60,7 @@ public class ActorController {
                     schema = @Schema(implementation = ErrorResponse.class)
             )
     )
-    @ApiResponse(responseCode = "404", description = "Actor not found",
+    @ApiResponse(responseCode = "404", description = "Person not found",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ErrorResponse.class)
@@ -73,28 +73,28 @@ public class ActorController {
             )
     )
     @PutMapping("/{id}")
-    public ResponseEntity<DetailedActorResponse> updateActor(
+    public ResponseEntity<DetailedPersonResponse> updatePerson(
             @PathVariable Long id,
-            @RequestBody @Valid ActorRequest request) {
-        DetailedActorResponse response = actorService.updateActor(id, request);
+            @RequestBody @Valid PersonRequest request) {
+        DetailedPersonResponse response = personService.updatePerson(id, request);
 
         return ResponseEntity.ok(response);
     }
 
     @Operation(
-            summary = "Delete actor",
-            description = "Deletes actor by id"
+            summary = "Delete person",
+            description = "Removes the person from their films and deletes them"
     )
-    @ApiResponse(responseCode = "204", description = "Actor deleted")
-    @ApiResponse(responseCode = "404", description = "Actor not found",
+    @ApiResponse(responseCode = "204", description = "Person deleted")
+    @ApiResponse(responseCode = "404", description = "Person not found",
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = ErrorResponse.class)
             )
     )
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteActor(@PathVariable Long id) {
-        actorService.deleteActor(id);
+    public ResponseEntity<Void> deletePerson(@PathVariable Long id) {
+        personService.deletePerson(id);
         return ResponseEntity.noContent().build();
     }
 }

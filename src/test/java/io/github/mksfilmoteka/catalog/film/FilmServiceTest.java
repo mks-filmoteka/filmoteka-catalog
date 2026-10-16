@@ -1,14 +1,13 @@
 package io.github.mksfilmoteka.catalog.film;
 
-import io.github.mksfilmoteka.catalog.actor.ActorService;
 import io.github.mksfilmoteka.catalog.common.PageResponse;
 import io.github.mksfilmoteka.catalog.common.exception.BadRequestException;
 import io.github.mksfilmoteka.catalog.common.exception.ConflictException;
 import io.github.mksfilmoteka.catalog.common.exception.ResourceNotFoundException;
-import io.github.mksfilmoteka.catalog.director.DirectorService;
 import io.github.mksfilmoteka.catalog.film.dto.*;
 import io.github.mksfilmoteka.catalog.outbox.OutboxEvent;
 import io.github.mksfilmoteka.catalog.outbox.OutboxEventRepository;
+import io.github.mksfilmoteka.catalog.person.PersonService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,11 +30,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static io.github.mksfilmoteka.catalog.actor.ActorTestData.actorRequest;
-import static io.github.mksfilmoteka.catalog.actor.ActorTestData.loadedActor;
-import static io.github.mksfilmoteka.catalog.director.DirectorTestData.directorRequest;
-import static io.github.mksfilmoteka.catalog.director.DirectorTestData.loadedDirector;
 import static io.github.mksfilmoteka.catalog.film.FilmTestData.*;
+import static io.github.mksfilmoteka.catalog.person.PersonTestData.*;
 import static io.github.mksfilmoteka.catalog.util.TestUtil.JSON_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -52,10 +48,7 @@ class FilmServiceTest {
     private FilmMapper filmMapper;
 
     @Mock
-    private ActorService actorService;
-
-    @Mock
-    private DirectorService directorService;
+    private PersonService personService;
 
     @Mock
     private OutboxEventRepository outboxEventRepository;
@@ -80,8 +73,8 @@ class FilmServiceTest {
         loadedFilm.addDirector(loadedDirector());
 
         when(filmMapper.filmRequestToFilm(filmRequestFull())).thenReturn(film);
-        when(actorService.findOrCreate(actorRequest())).thenReturn(loadedActor());
-        when(directorService.findOrCreate(directorRequest())).thenReturn(loadedDirector());
+        when(personService.findOrCreate(actorRequest())).thenReturn(loadedActor());
+        when(personService.findOrCreate(directorRequest())).thenReturn(loadedDirector());
         when(filmMapper.filmToDetailedFilmResponse(loadedFilm)).thenReturn(detailedFilmResponseFull());
         when(filmRepository.save(any(Film.class))).thenReturn(loadedFilm);
 
@@ -90,8 +83,8 @@ class FilmServiceTest {
         assertThat(response).isEqualTo(detailedFilmResponseFull());
 
         verify(filmMapper).filmRequestToFilm(filmRequestFull());
-        verify(actorService).findOrCreate(actorRequest());
-        verify(directorService).findOrCreate(directorRequest());
+        verify(personService).findOrCreate(actorRequest());
+        verify(personService).findOrCreate(directorRequest());
         verify(filmRepository).save(film);
         verify(filmMapper).filmToDetailedFilmResponse(loadedFilm);
     }
@@ -105,8 +98,8 @@ class FilmServiceTest {
         FilmRequest request = filmRequestWithDuplications();
 
         when(filmMapper.filmRequestToFilm(request)).thenReturn(film);
-        when(actorService.findOrCreate(actorRequest())).thenReturn(actor);
-        when(directorService.findOrCreate(directorRequest())).thenReturn(director);
+        when(personService.findOrCreate(actorRequest())).thenReturn(actor);
+        when(personService.findOrCreate(directorRequest())).thenReturn(director);
         when(filmMapper.filmToDetailedFilmResponse(loadedFilm)).thenReturn(detailedFilmResponseFull());
         when(filmRepository.save(film)).thenReturn(loadedFilm);
 
@@ -115,8 +108,8 @@ class FilmServiceTest {
         assertThat(response).isEqualTo(detailedFilmResponseFull());
         assertThat(film.getActors()).containsExactly(actor);
         assertThat(film.getDirectors()).containsExactly(director);
-        verify(actorService, times(1)).findOrCreate(actorRequest());
-        verify(directorService, times(1)).findOrCreate(directorRequest());
+        verify(personService, times(2)).findOrCreate(actorRequest());
+        verify(personService, times(2)).findOrCreate(directorRequest());
     }
 
     @Test
@@ -274,7 +267,7 @@ class FilmServiceTest {
 
         verify(filmRepository).existsByTitleAndReleaseYear(FILM_TITLE, RELEASE_YEAR);
         verify(filmRepository, never()).saveAndFlush(any());
-        verifyNoInteractions(filmMapper, actorService, directorService);
+        verifyNoInteractions(filmMapper, personService);
     }
 
     @Test
@@ -284,8 +277,8 @@ class FilmServiceTest {
         FilmRequest request = filmRequestWithDuplications();
 
         when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(loadedFilm));
-        when(actorService.findOrCreate(any())).thenReturn(loadedActor());
-        when(directorService.findOrCreate(any())).thenReturn(loadedDirector());
+        when(personService.findOrCreate(any())).thenReturn(loadedActor());
+        when(personService.findOrCreate(any())).thenReturn(loadedDirector());
 
         doAnswer(updateTitleOnly()).when(filmMapper).updateFilmRequestToFilm(any(), any());
 
@@ -301,8 +294,8 @@ class FilmServiceTest {
         verify(filmRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getTitle()).isEqualTo(FILM_TITLE);
         verify(filmMapper).updateFilmRequestToFilm(request, loadedFilm);
-        verify(actorService, times(1)).findOrCreate(actorRequest());
-        verify(directorService, times(1)).findOrCreate(directorRequest());
+        verify(personService, times(2)).findOrCreate(actorRequest());
+        verify(personService, times(2)).findOrCreate(directorRequest());
         verify(filmMapper).filmToDetailedFilmResponse(any(Film.class));
         verifyNoInteractions(outboxEventRepository, jsonMapper);
     }
@@ -315,8 +308,8 @@ class FilmServiceTest {
         FilmRequest request = filmRequestFull();
 
         when(filmRepository.findById(FILM_ID)).thenReturn(Optional.of(film));
-        when(actorService.findOrCreate(actorRequest())).thenReturn(loadedActor());
-        when(directorService.findOrCreate(directorRequest())).thenReturn(loadedDirector());
+        when(personService.findOrCreate(actorRequest())).thenReturn(loadedActor());
+        when(personService.findOrCreate(directorRequest())).thenReturn(loadedDirector());
         doAnswer(invocation -> {
             FilmRequest update = invocation.getArgument(0);
             Film target = invocation.getArgument(1);
@@ -359,7 +352,7 @@ class FilmServiceTest {
         assertThrows(ConflictException.class, () -> filmService.updateFilm(FILM_ID, staleRequest));
         assertThat(film.getPosterName()).isEqualTo("current-poster.jpg");
         verify(filmRepository, never()).saveAndFlush(any());
-        verifyNoInteractions(filmMapper, actorService, directorService, outboxEventRepository, jsonMapper);
+        verifyNoInteractions(filmMapper, personService, outboxEventRepository, jsonMapper);
     }
 
     @Test

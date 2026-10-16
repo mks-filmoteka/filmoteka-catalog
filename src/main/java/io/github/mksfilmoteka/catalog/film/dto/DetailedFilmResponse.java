@@ -1,9 +1,8 @@
 package io.github.mksfilmoteka.catalog.film.dto;
 
-import io.github.mksfilmoteka.catalog.actor.dto.ActorResponse;
-import io.github.mksfilmoteka.catalog.director.dto.DirectorResponse;
 import io.github.mksfilmoteka.catalog.film.Country;
 import io.github.mksfilmoteka.catalog.film.Genre;
+import io.github.mksfilmoteka.catalog.person.dto.PersonResponse;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -35,10 +34,10 @@ public record DetailedFilmResponse(
         @Schema(description = "Film genres", example = "[\"Action\", \"Adventure\"]")
         List<Genre> genres,
 
-        @ArraySchema(schema = @Schema(implementation = ActorResponse.class))
-        List<ActorResponse> actors,
+        @ArraySchema(schema = @Schema(implementation = PersonResponse.class))
+        List<PersonResponse> actors,
 
-        @ArraySchema(schema = @Schema(implementation = DirectorResponse.class))
-        List<DirectorResponse> directors
+        @ArraySchema(schema = @Schema(implementation = PersonResponse.class))
+        List<PersonResponse> directors
 ) {
 }
