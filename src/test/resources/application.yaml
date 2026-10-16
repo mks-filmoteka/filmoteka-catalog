@@ -38,3 +38,7 @@ app:
         name: film-deleted-test
       film-poster-changed:
         name: film-poster-changed-test
+      person-deleted:
+        name: person-deleted-test
+      person-photo-changed:
+        name: person-photo-changed-test

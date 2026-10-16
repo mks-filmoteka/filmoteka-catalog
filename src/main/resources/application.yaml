@@ -55,6 +55,10 @@ app:
         name: ${KAFKA_FILM_DELETED_TOPIC}
       film-poster-changed:
         name: ${KAFKA_FILM_POSTER_CHANGED_TOPIC}
+      person-deleted:
+        name: ${KAFKA_PERSON_DELETED_TOPIC}
+      person-photo-changed:
+        name: ${KAFKA_PERSON_PHOTO_CHANGED_TOPIC}
 
   outbox:
     cleanup:

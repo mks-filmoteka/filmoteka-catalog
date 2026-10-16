@@ -19,6 +19,8 @@ public final class PersonTestData {
     public static final LocalDate DEATH_DATE = LocalDate.of(2020, 1, 1);
     public static final String PLACE_OF_BIRTH = "San Francisco, USA";
     public static final String PHOTO_NAME = "11111111-1111-1111-1111-111111111111.jpg";
+    public static final String PERSON_PHOTO_CHANGED_TOPIC = "person-photo-changed-test";
+    public static final String PERSON_DELETED_TOPIC = "person-deleted-test";
 
     public static Person person(String name) {
         Person person = new Person();

@@ -20,4 +20,14 @@ public class KafkaTopicConfig {
     public NewTopic filmPosterChangedTopic(@Value("${app.kafka.topics.film-poster-changed.name}") String topicName) {
         return TopicBuilder.name(topicName).build();
     }
+
+    @Bean
+    public NewTopic personDeletedTopic(@Value("${app.kafka.topics.person-deleted.name}") String name) {
+        return TopicBuilder.name(name).build();
+    }
+
+    @Bean
+    public NewTopic personPhotoChangedTopic(@Value("${app.kafka.topics.person-photo-changed.name}") String name) {
+        return TopicBuilder.name(name).build();
+    }
 }
