@@ -1,6 +1,7 @@
 package io.github.mksfilmoteka.catalog.person.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
@@ -33,4 +34,18 @@ public record PersonRequest(
                 message = "Photo file name must be a valid image file name")
         String photoName
 ) {
+    private static final LocalDate EARLIEST_DATE = LocalDate.of(1850, 1, 1);
+
+    @AssertTrue(message = "Death date must not be before birth date")
+    @Schema(hidden = true)
+    public boolean isLifespanValid() {
+        return birthDate == null || deathDate == null || !deathDate.isBefore(birthDate);
+    }
+
+    @AssertTrue(message = "Dates must not be before 1850")
+    @Schema(hidden = true)
+    public boolean isNotBefore1850() {
+        return (birthDate == null || !birthDate.isBefore(EARLIEST_DATE))
+                && (deathDate == null || !deathDate.isBefore(EARLIEST_DATE));
+    }
 }

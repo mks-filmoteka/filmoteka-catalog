@@ -67,6 +67,17 @@ class FilmotekaCatalogApplicationTest {
                 .andExpect(jsonPath("$.actors[0].id").value(actorId))
                 .andExpect(jsonPath("$.directors[0].id").value(directorId));
 
+        mockMvc.perform(get("/api/v1/people/{id}", actorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value(ACTOR_NAME))
+                .andExpect(jsonPath("$.actingFilms[0].id").value(filmId))
+                .andExpect(jsonPath("$.directingFilms").isEmpty());
+
+        mockMvc.perform(get("/api/v1/people/{id}", directorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value(DIRECTOR_NAME))
+                .andExpect(jsonPath("$.directingFilms[0].id").value(filmId));
+
         mockMvc.perform(get("/api/v1/films")
                         .param("title", FILM_TITLE)
                         .param("yearFrom", String.valueOf(RELEASE_YEAR))
